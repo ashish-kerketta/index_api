@@ -1,0 +1,23 @@
+# Django
+# Ignore virtual environments
+myenv/
+
+# Python-specific ignores
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+*.env
+*.venv
+
+# Django-specific ignores
+*.log
+db.sqlite3
+media/
+staticfiles/
+# If you're using environment variables
+.env  
+
+
+# OS-specific files
+.DS_Store
