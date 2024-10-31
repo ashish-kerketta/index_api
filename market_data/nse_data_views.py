@@ -1,20 +1,17 @@
 # market_data/nse_5min_views.py
 import yfinance as yf
-import pandas as pd
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+import pandas as pd
 
 @api_view(['GET'])
-def get_nse_5min_data(request, ticker):
+def get_nse_data(request, ticker):
     try:
         # Fetch stock data for the given ticker symbol at 5-minute intervals
         stock = yf.Ticker(ticker)
-        data = stock.history(period="1d", interval="5m")  # Get 5-minute candles for today
+        data = stock.history(period="5d", interval="5m")  # Get 5-minute candles for the last 5 days
         
         if not data.empty:
-            # Limit to the most recent 60 candles to ensure we can calculate SMA50
-            data = data.tail(60)
-            
             # Calculate SMA9, SMA20, and SMA50
             data['SMA9'] = data['Close'].rolling(window=9).mean()
             data['SMA20'] = data['Close'].rolling(window=20).mean()
@@ -22,14 +19,14 @@ def get_nse_5min_data(request, ticker):
 
             # Get the last candle (most recent one)
             current_candle = data.iloc[-1]
-
-            # Prepare the response
+            
+            # Prepare the response with values rounded to two decimal places
             response_data = {
                 "ticker": ticker,
-                "current_close_price": current_candle['Close'],
-                "SMA9": current_candle['SMA9'],
-                "SMA20": current_candle['SMA20'],
-                "SMA50": current_candle['SMA50']
+                "current_close_price": round(current_candle['Close'], 2) if pd.notna(current_candle['Close']) else None,
+                "SMA9": round(current_candle['SMA9'], 2) if pd.notna(current_candle['SMA9']) else None,
+                "SMA20": round(current_candle['SMA20'], 2) if pd.notna(current_candle['SMA20']) else None,
+                "SMA50": round(current_candle['SMA50'], 2) if pd.notna(current_candle['SMA50']) else None
             }
 
             return Response(response_data)
@@ -38,3 +35,4 @@ def get_nse_5min_data(request, ticker):
     
     except Exception as e:
         return Response({"error": str(e)}, status=500)
+

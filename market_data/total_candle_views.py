@@ -1,28 +1,39 @@
 # market_data/total_candle_views.py
 import yfinance as yf
-import pandas as pd
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+
+# This is for checking candle fetch or not
 @api_view(['GET'])
 def get_nse_5min_candles(request, ticker):
     try:
-        # Fetch stock data for the given ticker symbol at 5-minute intervals
+        # Fetch stock data for the given ticker symbol at 5-minute intervals for the last 5 days
         stock = yf.Ticker(ticker)
-        data = stock.history(period="1d", interval="5m")  # Get 5-minute candles for today
-        
+        data = stock.history(period="5d", interval="5m")
+
         if not data.empty:
-            # Limit to the most recent 60 candles to ensure we can calculate SMA50
-            data = data.tail(60)
+            # Select relevant columns: Datetime, Open, High, Low, Close
+            data = data[['Open', 'High', 'Low', 'Close']]
+            data.reset_index(inplace=True)  # Reset index to make Datetime a column
             
-            # Check how many candles are fetched
-            total_candles = len(data)
+            # Format datetime and convert data to a list of dictionaries
+            candles = [
+                {
+                    "Datetime": row['Datetime'].strftime('%Y-%m-%d %H:%M:%S'),
+                    "Open": row['Open'],
+                    "High": row['High'],
+                    "Low": row['Low'],
+                    "Close": row['Close']
+                }
+                for _, row in data.iterrows()
+            ]
             
-            # Prepare the response with the number of candles fetched
+            # Prepare response data
             response_data = {
                 "ticker": ticker,
-                "total_candles_fetched": total_candles,
-                "candles": data.to_dict('records'),  # Optional: include raw candle data for debugging
+                "total_candles_fetched": len(candles),
+                "candles": candles
             }
 
             return Response(response_data)
